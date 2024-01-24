@@ -1,15 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"io"
-	"log"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,6 +35,7 @@ type TraefikConfig struct {
 }
 
 func main() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	// var cloudflareAPI *cloudflare.API
 	var err error
 
@@ -40,8 +43,8 @@ func main() {
 
 	traefikConfigWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		fmt.Printf("creating a new watcher: %s\n", err)
-		os.Exit(1)
+		// fmt.Printf("creating a new watcher: %s\n", err)
+		log.Fatal().Err(err).Msg("")
 	}
 
 	defer traefikConfigWatcher.Close()
@@ -50,19 +53,19 @@ func main() {
 
 	st, err := os.Lstat(configFile)
 	if err != nil {
-		fmt.Printf("getting file info: %s\n", err)
-		os.Exit(2)
+		// fmt.Printf("getting file info: %s\n", err)
+		log.Fatal().Err(err).Msg("")
 	}
 
 	if st.IsDir() {
-		fmt.Printf("%s is a directory\n", configFile)
-		os.Exit(3)
+		// fmt.Printf("%s is a directory\n", configFile)
+		log.Fatal().Msgf("%s is a directory\n", configFile)
 	}
 
 	err = traefikConfigWatcher.Add(filepath.Dir(configFile))
 	if err != nil {
-		fmt.Printf("adding a new watcher: %s\n", err)
-		os.Exit(4)
+		// fmt.Printf("adding a new watcher: %s\n", err)
+		log.Fatal().Err(err).Msg("")
 	}
 
 	// cloudflareAPI, err = cloudflare.NewWithAPIToken(os.Getenv("CLOUDFLARE_API_TOKEN"))
@@ -113,7 +116,7 @@ func main() {
 	// fmt.Println(tconfig)
 	// fmt.Println(resultInfo.Count, records)
 
-	fmt.Printf("%v running; press ^C to exit\n", time.Now())
+	log.Info().Msg("Watching for config changes")
 	<-make(chan struct{})
 }
 
@@ -121,7 +124,7 @@ func getWANIP() string {
 	res, err := http.Get("https://ipv4.icanhazip.com")
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 
 	resBody, _ := io.ReadAll(res.Body)
@@ -148,13 +151,33 @@ func readTraefikConfig(filename string) (TraefikConfig, error) {
 func handleConfigChange(filename string) {
 	traefikConfig, err := readTraefikConfig(filename)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error: %s", err))
+		log.Error().Err(err)
+		// fmt.Println(fmt.Errorf("error: %s", err))
 	}
 
-	fmt.Println(traefikConfig)
+	log.Info().Str("Rule", traefikConfig.HTTP.Routers["gitlab"].Rule).Msg("Config updated")
+	// fmt.Println(traefikConfig)
 }
 
 func configWatcher(w *fsnotify.Watcher, filename string) {
+	var (
+		// Wait 100ms for new events; each new event resets the timer.
+		waitTime = 100 * time.Millisecond
+
+		// Keep track of the timers, as path -> timer.
+		mu     sync.Mutex
+		timers = make(map[string]*time.Timer)
+
+		// Callback we run.
+		eventHandler = func(e fsnotify.Event) {
+			handleConfigChange(filename)
+
+			mu.Lock()
+			delete(timers, e.Name)
+			mu.Unlock()
+		}
+	)
+
 	for {
 		select {
 		case event, ok := <-w.Events:
@@ -162,16 +185,28 @@ func configWatcher(w *fsnotify.Watcher, filename string) {
 				return
 			}
 
-			if event.Name == filename && event.Op&fsnotify.Write == fsnotify.Write {
-				fmt.Println(getWANIP())
-				handleConfigChange(filename)
+			if event.Name == filename && event.Has(fsnotify.Write) {
+				mu.Lock()
+				t, ok := timers[event.Name]
+				mu.Unlock()
+
+				if !ok {
+					t = time.AfterFunc(math.MaxInt64, func() { eventHandler(event) })
+					t.Stop()
+
+					mu.Lock()
+					timers[event.Name] = t
+					mu.Unlock()
+				}
+
+				t.Reset(waitTime)
 			}
 		case err, ok := <-w.Errors:
 			if !ok {
 				return
 			}
 
-			log.Println("error:", err)
+			log.Error().Err(err)
 		}
 	}
 }
