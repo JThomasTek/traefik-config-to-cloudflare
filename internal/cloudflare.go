@@ -13,3 +13,11 @@ func InitializeCloudflareAPIToken(token string) error {
 
 	return err
 }
+
+func InitializeCloudflareAPIKey(key string, email string) error {
+	var err error
+
+	cloudflareAPI, err = cloudflare.New(key, email)
+
+	return err
+}
