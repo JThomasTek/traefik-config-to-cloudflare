@@ -6,7 +6,7 @@ require (
 	github.com/cloudflare/cloudflare-go v0.86.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/rs/zerolog v1.31.0
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
