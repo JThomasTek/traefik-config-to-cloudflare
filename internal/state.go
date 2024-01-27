@@ -2,6 +2,7 @@ package internal
 
 import (
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/rs/zerolog/log"
@@ -90,6 +91,14 @@ func writeState(newState state) error {
 	return nil
 }
 
+func cleanRule(rule string) string {
+	hostStartIndex := strings.Index(rule, "Host(`") + 6
+	hostEndIndex := strings.Index(rule[hostStartIndex:], "`)") + hostStartIndex
+	hostSubstr := rule[hostStartIndex:hostEndIndex]
+
+	return hostSubstr
+}
+
 func CompareStateToConfig(config TraefikConfig) error {
 	log.Info().Msg("Comparing state file to config")
 
@@ -107,7 +116,11 @@ func CompareStateToConfig(config TraefikConfig) error {
 			s.Routers[k] = v
 			changed = true
 			// TODO: Perform Cloudflare DNS add
-			log.Info().Msg("Performing Cloudflare DNS add")
+			log.Info().Msgf("Performing Cloudflare DNS add: %s", k)
+			err = AddSubdomain(k, cleanRule(v.Rule), s.WanIP)
+			if err != nil {
+				log.Error().Err(err).Msg("")
+			}
 		}
 	}
 
@@ -118,7 +131,11 @@ func CompareStateToConfig(config TraefikConfig) error {
 			delete(s.Routers, k)
 			changed = true
 			// TODO: Perform Cloudflare DNS remove
-			log.Info().Msg("Performing Cloudflare DNS remove")
+			log.Info().Msgf("Performing Cloudflare DNS remove: %s", k)
+			err = DeleteSubdomain(k)
+			if err != nil {
+				log.Error().Err(err).Msg("")
+			}
 		}
 	}
 
@@ -144,6 +161,11 @@ func CompareStateToWanIP(wanIP string) error {
 		s.WanIP = wanIP
 
 		// TODO: Update Cloudflare DNS records with new WAN IP
+		err = UpdateWanIP(s)
+		if err != nil {
+			log.Error().Err(err).Msg("")
+		}
+
 		if err = writeState(s); err != nil {
 			return err
 		}

@@ -22,3 +22,5 @@ go.work
 
 test.yaml
 state.yaml
+
+cmd/testing/
