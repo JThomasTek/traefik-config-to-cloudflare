@@ -31,6 +31,9 @@ func main() {
 		}
 	}
 
+	internal.InitialWanIPCheck()
+	internal.InitialConfigCheck(configFile)
+
 	traefikConfigWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		// fmt.Printf("creating a new watcher: %s\n", err)

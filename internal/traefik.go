@@ -13,7 +13,6 @@ import (
 
 type Router struct {
 	Rule    string `yaml:"rule,omitempty"`
-	Service string `yaml:"service,omitempty"`
 }
 
 type TraefikConfig struct {
@@ -46,7 +45,16 @@ func handleConfigChange(filename string) {
 		log.Error().Err(err).Msg("")
 	}
 
-	log.Info().Str("Rule", traefikConfig.HTTP.Routers["gitlab"].Rule).Str("WAN_IP", GetWANIP()).Msg("Config updated")
+	err = CompareStateToConfig(traefikConfig)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+
+	// for key, route := range traefikConfig.HTTP.Routers {
+	// 	log.Info().Msgf("%s: %s", key, route.Rule)
+	// }
+
+	// log.Info().Str("Rule", traefikConfig.HTTP.Routers["gitlab"].Rule).Str("WAN_IP", GetWANIP()).Msg("Config updated")
 }
 
 func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
@@ -99,4 +107,18 @@ func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
 			log.Error().Err(err)
 		}
 	}
+}
+
+func InitialConfigCheck(filename string) error {
+	traefikConfig, err := readTraefikConfig(filename)
+	if err != nil {
+		return err
+	}
+
+	err = CompareStateToConfig(traefikConfig)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

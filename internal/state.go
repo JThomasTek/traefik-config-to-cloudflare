@@ -3,17 +3,20 @@ package internal
 import (
 	"os"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
 var stateFile = "/var/traeflare/state.yaml"
 
 type state struct {
-	WanIP      string
-	Subdomains []string
+	WanIP   string
+	Routers map[string]Router
 }
 
 func generateState() error {
+	log.Info().Msg("Generate the state file")
+
 	// First check if directory exists and if not then create it
 	if _, err := os.Stat("/var/traeflare"); os.IsNotExist(err) {
 		os.Mkdir("/var/traeflare", 0755)
@@ -31,6 +34,8 @@ func generateState() error {
 }
 
 func getState() (state, error) {
+	log.Info().Msg("Reading state file data")
+
 	// First check that state file exists
 	_, err := os.Stat(stateFile)
 	if err != nil {
@@ -65,6 +70,7 @@ func getState() (state, error) {
 }
 
 func writeState(newState state) error {
+	log.Info().Msg("Writing to the state file")
 	var oldState state
 
 	file, err := os.Open(stateFile)
@@ -87,14 +93,57 @@ func writeState(newState state) error {
 	return nil
 }
 
-func updateState(config TraefikConfig) error {
-	return nil
-}
+// func updateState(config TraefikConfig, s state) error {
+// 	log.Info().Msg("Update state file")
+
+// 	writeState(s)
+// 	return nil
+// }
 
 func CompareStateToConfig(config TraefikConfig) error {
+	log.Info().Msg("Comparing state file to config")
+
+	s, err := getState()
+	if err != nil {
+		return err
+	}
+
+	changed := false
+
+	// Check if any new subdomains were added to the config
+	for k, v := range config.HTTP.Routers {
+		_, ok := s.Routers[k]
+		if !ok {
+			s.Routers[k] = v
+			changed = true
+			// TODO: Perform Cloudflare DNS add
+			log.Info().Msg("Performing Cloudflare DNS add")
+			break
+		}
+	}
+
+	// Check if any subdomains were removed from the config
+	for k := range s.Routers {
+		_, ok := config.HTTP.Routers[k]
+		if !ok {
+			delete(s.Routers, k)
+			changed = true
+			// TODO: Perform Cloudflare DNS remove
+			log.Info().Msg("Performing Cloudflare DNS remove")
+			break
+		}
+	}
+
+	if changed {
+		if err = writeState(s); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 func CompareStateToWanIP(wanIP string) error {
+	log.Info().Msg("Comparing state file WAN IP to actual WAN IP")
 	return nil
 }
