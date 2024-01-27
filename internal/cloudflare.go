@@ -21,3 +21,7 @@ func InitializeCloudflareAPIKey(key string, email string) error {
 
 	return err
 }
+
+// func AddSubdomain() error {
+// 	return nil
+// }

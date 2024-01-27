@@ -22,7 +22,7 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	var err error
 
-	configFile := "./test.yaml"
+	traefikConfigFile := "/etc/traefik/config.yaml"
 
 	if os.Getenv("CLOUDFLARE_API_TOKEN") != "" {
 		err = internal.InitializeCloudflareAPIToken(os.Getenv("CLOUDFLARE_API_TOKEN"))
@@ -31,8 +31,14 @@ func main() {
 		}
 	}
 
-	internal.InitialWanIPCheck()
-	internal.InitialConfigCheck(configFile)
+	err = internal.InitialWanIPCheck()
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
+	}
+	internal.InitialConfigCheck(traefikConfigFile)
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
+	}
 
 	traefikConfigWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -42,10 +48,10 @@ func main() {
 
 	defer traefikConfigWatcher.Close()
 
-	go internal.TraefikConfigWatcher(traefikConfigWatcher, configFile)
+	go internal.TraefikConfigWatcher(traefikConfigWatcher, traefikConfigFile)
 	go internal.WanIPCheck(60)
 
-	st, err := os.Lstat(configFile)
+	st, err := os.Lstat(traefikConfigFile)
 	if err != nil {
 		// fmt.Printf("getting file info: %s\n", err)
 		log.Fatal().Err(err).Msg("")
@@ -53,10 +59,10 @@ func main() {
 
 	if st.IsDir() {
 		// fmt.Printf("%s is a directory\n", configFile)
-		log.Fatal().Msgf("%s is a directory\n", configFile)
+		log.Fatal().Msgf("%s is a directory\n", traefikConfigFile)
 	}
 
-	err = traefikConfigWatcher.Add(filepath.Dir(configFile))
+	err = traefikConfigWatcher.Add(filepath.Dir(traefikConfigFile))
 	if err != nil {
 		// fmt.Printf("adding a new watcher: %s\n", err)
 		log.Fatal().Err(err).Msg("")

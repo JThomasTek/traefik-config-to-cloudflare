@@ -2,12 +2,17 @@ package internal
 
 import (
 	"os"
+	"sync"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
-var stateFile = "/var/traeflare/state.yaml"
+var (
+	stateFolder = "/etc/traeflare/"
+	stateFile   = stateFolder + "state.yaml"
+	mu          sync.Mutex
+)
 
 type state struct {
 	WanIP   string
@@ -18,8 +23,11 @@ func generateState() error {
 	log.Info().Msg("Generate the state file")
 
 	// First check if directory exists and if not then create it
-	if _, err := os.Stat("/var/traeflare"); os.IsNotExist(err) {
-		os.Mkdir("/var/traeflare", 0755)
+	if _, err := os.Stat(stateFolder); os.IsNotExist(err) {
+		err = os.Mkdir(stateFolder, 0744)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Create the state file
@@ -49,14 +57,9 @@ func getState() (state, error) {
 
 	var s state
 
-	file, err := os.Open(stateFile)
-	if err != nil {
-		return s, err
-	}
-
-	defer file.Close()
-
+	mu.Lock()
 	buffer, err := os.ReadFile(stateFile)
+	mu.Unlock()
 	if err != nil {
 		return s, err
 	}
@@ -71,34 +74,21 @@ func getState() (state, error) {
 
 func writeState(newState state) error {
 	log.Info().Msg("Writing to the state file")
-	var oldState state
 
-	file, err := os.Open(stateFile)
+	data, err := yaml.Marshal(newState)
 	if err != nil {
 		return err
 	}
 
-	defer file.Close()
-
-	buffer, err := os.ReadFile(stateFile)
-	if err != nil {
-		return err
-	}
-
-	err = yaml.Unmarshal(buffer, &oldState)
+	mu.Lock()
+	err = os.WriteFile(stateFile, data, 0644)
+	mu.Unlock()
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-
-// func updateState(config TraefikConfig, s state) error {
-// 	log.Info().Msg("Update state file")
-
-// 	writeState(s)
-// 	return nil
-// }
 
 func CompareStateToConfig(config TraefikConfig) error {
 	log.Info().Msg("Comparing state file to config")
@@ -118,7 +108,6 @@ func CompareStateToConfig(config TraefikConfig) error {
 			changed = true
 			// TODO: Perform Cloudflare DNS add
 			log.Info().Msg("Performing Cloudflare DNS add")
-			break
 		}
 	}
 
@@ -130,7 +119,6 @@ func CompareStateToConfig(config TraefikConfig) error {
 			changed = true
 			// TODO: Perform Cloudflare DNS remove
 			log.Info().Msg("Performing Cloudflare DNS remove")
-			break
 		}
 	}
 
@@ -145,5 +133,21 @@ func CompareStateToConfig(config TraefikConfig) error {
 
 func CompareStateToWanIP(wanIP string) error {
 	log.Info().Msg("Comparing state file WAN IP to actual WAN IP")
+
+	s, err := getState()
+	if err != nil {
+		return err
+	}
+
+	// Check if the WAN IP has changed, update it if it has
+	if s.WanIP != wanIP {
+		s.WanIP = wanIP
+
+		// TODO: Update Cloudflare DNS records with new WAN IP
+		if err = writeState(s); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
