@@ -13,8 +13,9 @@ import (
 /* TODO: 1. Create main infinite loop that checks for WAN IP changes or subdomain changes and updates accordingly -DONE
 1.a Create a state file that stores the current WAN IP and subdomains -DONE
 2. Add logging -DONE
-3. Add support for multiple domains
-4. Add ability to disable WAN IP updates
+3. Add support for Docker labels
+4. Add support for multiple domains
+5. Add ability to disable WAN IP updates
 */
 
 func main() {
