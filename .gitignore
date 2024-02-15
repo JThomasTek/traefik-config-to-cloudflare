@@ -20,7 +20,7 @@
 # Go workspace file
 go.work
 
-test.yaml
+config.yaml
 state.yaml
 
 cmd/testing/

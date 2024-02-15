@@ -12,7 +12,7 @@ import (
 )
 
 type Router struct {
-	Rule    string `yaml:"rule,omitempty"`
+	Rule string `yaml:"rule,omitempty"`
 }
 
 type TraefikConfig struct {
@@ -24,6 +24,7 @@ type TraefikConfig struct {
 func readTraefikConfig(filename string) (TraefikConfig, error) {
 	var config TraefikConfig
 
+	log.Debug().Msg("Reading Traefik config file")
 	// Read the config file
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -40,6 +41,7 @@ func readTraefikConfig(filename string) (TraefikConfig, error) {
 }
 
 func handleConfigChange(filename string) {
+	log.Debug().Msg("Handling config change")
 	traefikConfig, err := readTraefikConfig(filename)
 	if err != nil {
 		log.Error().Err(err).Msg("")
@@ -49,12 +51,6 @@ func handleConfigChange(filename string) {
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
-
-	// for key, route := range traefikConfig.HTTP.Routers {
-	// 	log.Info().Msgf("%s: %s", key, route.Rule)
-	// }
-
-	// log.Info().Str("Rule", traefikConfig.HTTP.Routers["gitlab"].Rule).Str("WAN_IP", GetWANIP()).Msg("Config updated")
 }
 
 func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
@@ -76,6 +72,7 @@ func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
 		}
 	)
 
+	log.Debug().Msg("Starting Traefik config watcher")
 	for {
 		select {
 		case event, ok := <-w.Events:
@@ -110,6 +107,7 @@ func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
 }
 
 func InitialConfigCheck(filename string) error {
+	log.Debug().Msg("Initial config check")
 	traefikConfig, err := readTraefikConfig(filename)
 	if err != nil {
 		return err

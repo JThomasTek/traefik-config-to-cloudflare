@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,6 +21,7 @@ var (
 )
 
 func InitializeCloudflareAPIToken(token string, zoneID string) error {
+	log.Debug().Msg("Initializing Cloudflare API with token")
 	var err error
 
 	cloudflareData.cloudflareAPI, err = cloudflare.NewWithAPIToken(token)
@@ -30,6 +32,7 @@ func InitializeCloudflareAPIToken(token string, zoneID string) error {
 }
 
 func InitializeCloudflareAPIKey(key string, email string, zoneID string) error {
+	log.Debug().Msg("Initializing Cloudflare API with key")
 	var err error
 
 	cloudflareData.cloudflareAPI, err = cloudflare.New(key, email)
@@ -40,6 +43,8 @@ func InitializeCloudflareAPIKey(key string, email string, zoneID string) error {
 }
 
 func AddSubdomain(routerIdentifier string, rule string, wanIP string) error {
+	log.Info().Str("DNS_Record", routerIdentifier).Msg("Performing Cloudflare DNS add")
+
 	ctx := context.Background()
 
 	_, err := cloudflareData.cloudflareAPI.CreateDNSRecord(ctx, cloudflare.ZoneIdentifier(cloudflareData.zoneID), cloudflare.CreateDNSRecordParams{
@@ -82,6 +87,7 @@ func UpdateWanIP(s state) error {
 }
 
 func ListDNSRecords() error {
+	log.Debug().Msg("Listing Cloudflare DNS records")
 	ctx := context.Background()
 
 	records, _, err := cloudflareData.cloudflareAPI.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(cloudflareData.zoneID), cloudflare.ListDNSRecordsParams{})
@@ -100,6 +106,8 @@ func ListDNSRecords() error {
 }
 
 func DeleteSubdomain(routerIdentifier string) error {
+	log.Info().Str("DNS_Record", routerIdentifier).Msg("Performing Cloudflare DNS remove")
+
 	ctx := context.Background()
 
 	records, _, err := cloudflareData.cloudflareAPI.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(cloudflareData.zoneID), cloudflare.ListDNSRecordsParams{})

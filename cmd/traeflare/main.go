@@ -12,7 +12,7 @@ import (
 
 /* TODO: 1. Create main infinite loop that checks for WAN IP changes or subdomain changes and updates accordingly -DONE
 1.a Create a state file that stores the current WAN IP and subdomains -DONE
-2. Add logging
+2. Add logging -DONE
 3. Add command line flags for config file location, cloudflare credentials, etc.
 4. Add support for multiple domains
 5. Add ability to disable WAN IP updates
@@ -20,6 +20,8 @@ import (
 
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
 	var err error
 
 	traefikConfigFile := "/etc/traefik/config.yaml"
@@ -47,26 +49,23 @@ func main() {
 
 	defer traefikConfigWatcher.Close()
 
+	log.Info().Msg("Watching for config changes")
 	go internal.TraefikConfigWatcher(traefikConfigWatcher, traefikConfigFile)
 	go internal.WanIPCheck(60)
 
 	st, err := os.Lstat(traefikConfigFile)
 	if err != nil {
-		// fmt.Printf("getting file info: %s\n", err)
 		log.Fatal().Err(err).Msg("")
 	}
 
 	if st.IsDir() {
-		// fmt.Printf("%s is a directory\n", configFile)
 		log.Fatal().Msgf("%s is a directory\n", traefikConfigFile)
 	}
 
 	err = traefikConfigWatcher.Add(filepath.Dir(traefikConfigFile))
 	if err != nil {
-		// fmt.Printf("adding a new watcher: %s\n", err)
 		log.Fatal().Err(err).Msg("")
 	}
 
-	log.Info().Msg("Watching for config changes")
 	<-make(chan struct{})
 }

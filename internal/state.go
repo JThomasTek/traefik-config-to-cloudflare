@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	stateFolder = "/etc/traeflare/"
+	stateFolder = "/etc/ctc/"
 	stateFile   = stateFolder + "state.yaml"
 	mu          sync.Mutex
 )
@@ -21,7 +21,7 @@ type state struct {
 }
 
 func generateState() error {
-	log.Info().Msg("Generate the state file")
+	log.Debug().Msg("Generate the state file")
 
 	// First check if directory exists and if not then create it
 	if _, err := os.Stat(stateFolder); os.IsNotExist(err) {
@@ -43,7 +43,7 @@ func generateState() error {
 }
 
 func getState() (state, error) {
-	log.Info().Msg("Reading state file data")
+	log.Debug().Msg("Reading state file data")
 
 	// First check that state file exists
 	_, err := os.Stat(stateFile)
@@ -74,7 +74,7 @@ func getState() (state, error) {
 }
 
 func writeState(newState state) error {
-	log.Info().Msg("Writing to the state file")
+	log.Debug().Msg("Writing to the state file")
 
 	data, err := yaml.Marshal(newState)
 	if err != nil {
@@ -100,7 +100,7 @@ func cleanRule(rule string) string {
 }
 
 func CompareStateToConfig(config TraefikConfig) error {
-	log.Info().Msg("Comparing state file to config")
+	log.Debug().Msg("Comparing state file to config")
 
 	s, err := getState()
 	if err != nil {
@@ -115,8 +115,8 @@ func CompareStateToConfig(config TraefikConfig) error {
 		if !ok {
 			s.Routers[k] = v
 			changed = true
-			// TODO: Perform Cloudflare DNS add
-			log.Info().Msgf("Performing Cloudflare DNS add: %s", k)
+
+			// Perform Cloudflare DNS add
 			err = AddSubdomain(k, cleanRule(v.Rule), s.WanIP)
 			if err != nil {
 				log.Error().Err(err).Msg("")
@@ -130,8 +130,8 @@ func CompareStateToConfig(config TraefikConfig) error {
 		if !ok {
 			delete(s.Routers, k)
 			changed = true
-			// TODO: Perform Cloudflare DNS remove
-			log.Info().Msgf("Performing Cloudflare DNS remove: %s", k)
+
+			// Perform Cloudflare DNS remove
 			err = DeleteSubdomain(k)
 			if err != nil {
 				log.Error().Err(err).Msg("")
@@ -149,7 +149,7 @@ func CompareStateToConfig(config TraefikConfig) error {
 }
 
 func CompareStateToWanIP(wanIP string) error {
-	log.Info().Msg("Comparing state file WAN IP to actual WAN IP")
+	log.Debug().Msg("Comparing state file WAN IP to actual WAN IP")
 
 	s, err := getState()
 	if err != nil {
@@ -160,7 +160,7 @@ func CompareStateToWanIP(wanIP string) error {
 	if s.WanIP != wanIP {
 		s.WanIP = wanIP
 
-		// TODO: Update Cloudflare DNS records with new WAN IP
+		// Update Cloudflare DNS records with new WAN IP
 		err = UpdateWanIP(s)
 		if err != nil {
 			log.Error().Err(err).Msg("")

@@ -10,6 +10,7 @@ import (
 )
 
 func GetWANIP() string {
+	log.Debug().Msg("Checking current WAN IP")
 	res, err := http.Get("https://ipv4.icanhazip.com")
 
 	if err != nil {
@@ -22,6 +23,7 @@ func GetWANIP() string {
 }
 
 func WanIPCheck(checkInterval int) {
+	log.Debug().Msg("Starting WAN IP check routine")
 	for {
 		time.Sleep(time.Duration(checkInterval) * time.Second)
 		log.Info().Str("WAN_IP", GetWANIP()).Msg("WAN IP check")
@@ -32,6 +34,7 @@ func WanIPCheck(checkInterval int) {
 }
 
 func InitialWanIPCheck() error {
+	log.Debug().Msg("Performing initial WAN IP check")
 	err := CompareStateToWanIP(GetWANIP())
 	if err != nil {
 		return err
