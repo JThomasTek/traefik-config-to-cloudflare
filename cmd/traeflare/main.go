@@ -13,18 +13,29 @@ import (
 /* TODO: 1. Create main infinite loop that checks for WAN IP changes or subdomain changes and updates accordingly -DONE
 1.a Create a state file that stores the current WAN IP and subdomains -DONE
 2. Add logging -DONE
-3. Add command line flags for config file location, cloudflare credentials, etc.
-4. Add support for multiple domains
-5. Add ability to disable WAN IP updates
+3. Add support for multiple domains
+4. Add ability to disable WAN IP updates
 */
 
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	switch os.Getenv("LOG_LEVEL") {
+	case "trace":
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
 
 	var err error
 
 	traefikConfigFile := "/etc/traefik/config.yaml"
+
+	if os.Getenv("TRAEFIK_CONFIG_FILE") != "" {
+		traefikConfigFile = os.Getenv("TRAEFIK_CONFIG_FILE")
+	}
 
 	if os.Getenv("CLOUDFLARE_API_TOKEN") != "" {
 		err = internal.InitializeCloudflareAPIToken(os.Getenv("CLOUDFLARE_API_TOKEN"), os.Getenv("CLOUDFLARE_ZONE_ID"))
@@ -53,12 +64,12 @@ func main() {
 	go internal.TraefikConfigWatcher(traefikConfigWatcher, traefikConfigFile)
 	go internal.WanIPCheck(60)
 
-	st, err := os.Lstat(traefikConfigFile)
+	configFileInfo, err := os.Lstat(traefikConfigFile)
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
 
-	if st.IsDir() {
+	if configFileInfo.IsDir() {
 		log.Fatal().Msgf("%s is a directory\n", traefikConfigFile)
 	}
 
