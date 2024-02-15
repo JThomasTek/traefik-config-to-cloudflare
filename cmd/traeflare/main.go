@@ -43,6 +43,8 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("")
 		}
+	} else {
+		log.Fatal().Msg("No Cloudflare API token provided")
 	}
 
 	err = internal.InitialWanIPCheck()
