@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-dockerfile:
-    name: Build Dockerfile
+    name: Publish Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
