@@ -17,7 +17,7 @@ docker run -d --restart always -v path/to/local/ctc/dir:/etc/ctc -v /etc/traefik
 ### Docker Compose
 
 ``` yaml
-version: 3
+version: "3"
 
 volumes:
     ctc-dir:
