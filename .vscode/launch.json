@@ -5,18 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Main Package",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}/cmd/traeflare/main.go",
-        },
-        {
             "name": "Launch Test Package",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/testing/main.go",
+            "program": "${workspaceFolder}/cmd/ctc/main.go",
+            "env": {
+                "LOG_LEVEL": "debug",
+                "TRAEFIK_STATE_FILE": "${workspaceFolder}/state.yml",
+                "TRAEFIK_CONFIG_FILE": "${workspaceFolder}/config.yml",
+                "TRAEFIK_HOST_IGNORE_REGEX": "^[a-zA-Z0-9-]+\\.local\\.example\\.com$",
+                "CLOUDFLARE_API_TOKEN": "",
+                "CLOUDFLARE_ZONE_ID": ""
+            }
         }
     ]
 }

@@ -16,7 +16,7 @@ type cf struct {
 
 var (
 	cloudflareData cf
-	commentMessage string = "Managed by traeflare: "
+	commentMessage string = "Managed by ctc: "
 	proxied        *bool  = new(bool)
 )
 
