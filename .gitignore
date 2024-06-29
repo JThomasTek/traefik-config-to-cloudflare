@@ -21,6 +21,6 @@
 go.work
 
 config.y*ml
-state.yaml
+state.y*ml
 
 cmd/testing/
