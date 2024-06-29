@@ -116,7 +116,7 @@ func DeleteSubdomain(routerIdentifier string) error {
 	}
 
 	for _, record := range records {
-		if len(record.Comment) >= 22 {
+		if len(record.Comment) >= len(commentMessage) {
 			substr := record.Comment[len(commentMessage):]
 			if substr == routerIdentifier {
 				err = cloudflareData.cloudflareAPI.DeleteDNSRecord(ctx, cloudflare.ZoneIdentifier(cloudflareData.zoneID), record.ID)
