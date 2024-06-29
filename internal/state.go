@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -11,7 +13,7 @@ import (
 
 var (
 	stateFolder = "/etc/ctc/"
-	stateFile   = stateFolder + "state.yaml"
+	stateFile   = stateFolder + "state.yml"
 	mu          sync.Mutex
 )
 
@@ -99,7 +101,7 @@ func cleanRule(rule string) string {
 	return hostSubstr
 }
 
-func CompareStateToConfig(config TraefikConfig) error {
+func CompareStateToConfig(config TraefikConfig, hostIgnoreRegex *regexp.Regexp) error {
 	log.Debug().Msg("Comparing state file to config")
 
 	s, err := getState()
@@ -113,13 +115,19 @@ func CompareStateToConfig(config TraefikConfig) error {
 	for k, v := range config.HTTP.Routers {
 		_, ok := s.Routers[k]
 		if !ok {
-			s.Routers[k] = v
-			changed = true
+			// Only add subdomain if it doesn't match the ignore regex
+			if !hostIgnoreRegex.MatchString(cleanRule(v.Rule)) {
+				// Add the subdomain to the state file
+				s.Routers[k] = v
+				changed = true
 
-			// Perform Cloudflare DNS add
-			err = AddSubdomain(k, cleanRule(v.Rule), s.WanIP)
-			if err != nil {
-				log.Error().Err(err).Msg("")
+				// Perform Cloudflare DNS add
+				err = AddSubdomain(k, cleanRule(v.Rule), s.WanIP)
+				if err != nil {
+					log.Error().Err(err).Msg("")
+				}
+			} else {
+				log.Debug().Msg(fmt.Sprintf("Ignoring subdomain %s", cleanRule(v.Rule)))
 			}
 		}
 	}
