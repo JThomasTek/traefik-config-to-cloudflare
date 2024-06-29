@@ -3,6 +3,7 @@ package internal
 import (
 	"math"
 	"os"
+	"regexp"
 	"sync"
 	"time"
 
@@ -106,7 +107,7 @@ func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
 	}
 }
 
-func InitialConfigCheck(filename string) error {
+func InitialConfigCheck(filename string, hostIgnoreRegex regexp.Regexp) error {
 	log.Debug().Msg("Initial config check")
 	traefikConfig, err := readTraefikConfig(filename)
 	if err != nil {

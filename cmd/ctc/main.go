@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/JThomasTek/traefik-config-to-cloudflare/internal"
 	"github.com/fsnotify/fsnotify"
@@ -36,6 +37,17 @@ func main() {
 
 	if os.Getenv("TRAEFIK_CONFIG_FILE") != "" {
 		traefikConfigFile = os.Getenv("TRAEFIK_CONFIG_FILE")
+	}
+
+	hostIgnoreRegexString := ""
+
+	if os.Getenv("TRAEFIK_HOST_IGNORE_REGEX") != "" {
+		hostIgnoreRegexString = os.Getenv("HOST_IGNORE_REGEX")
+	}
+
+	hostIgnoreRegex, err := regexp.Compile(hostIgnoreRegexString)
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
 	}
 
 	if os.Getenv("CLOUDFLARE_API_TOKEN") != "" {
