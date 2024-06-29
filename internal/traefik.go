@@ -41,20 +41,20 @@ func readTraefikConfig(filename string) (TraefikConfig, error) {
 	return config, nil
 }
 
-func handleConfigChange(filename string) {
+func handleConfigChange(filename string, hostIgnoreRegex *regexp.Regexp) {
 	log.Debug().Msg("Handling config change")
 	traefikConfig, err := readTraefikConfig(filename)
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
 
-	err = CompareStateToConfig(traefikConfig)
+	err = CompareStateToConfig(traefikConfig, hostIgnoreRegex)
 	if err != nil {
 		log.Error().Err(err).Msg("")
 	}
 }
 
-func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
+func TraefikConfigWatcher(w *fsnotify.Watcher, filename string, hostIgnoreRegex *regexp.Regexp) {
 	var (
 		// Wait 100ms for new events; each new event resets the timer.
 		waitTime = 100 * time.Millisecond
@@ -65,7 +65,7 @@ func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
 
 		// Callback we run.
 		eventHandler = func(e fsnotify.Event) {
-			handleConfigChange(filename)
+			handleConfigChange(filename, hostIgnoreRegex)
 
 			mu.Lock()
 			delete(timers, e.Name)
@@ -107,14 +107,14 @@ func TraefikConfigWatcher(w *fsnotify.Watcher, filename string) {
 	}
 }
 
-func InitialConfigCheck(filename string, hostIgnoreRegex regexp.Regexp) error {
+func InitialConfigCheck(filename string, hostIgnoreRegex *regexp.Regexp) error {
 	log.Debug().Msg("Initial config check")
 	traefikConfig, err := readTraefikConfig(filename)
 	if err != nil {
 		return err
 	}
 
-	err = CompareStateToConfig(traefikConfig)
+	err = CompareStateToConfig(traefikConfig, hostIgnoreRegex)
 	if err != nil {
 		return err
 	}
