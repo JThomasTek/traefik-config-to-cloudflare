@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cloudflare-traefik-control
+  description: My App
+  labels:
+    example.com/custom: custom_label_value
+  tags:
+    - golang
+  links: []
+spec:
+  type: website
+  lifecycle: production
+  owner: JThomas
