@@ -33,11 +33,14 @@ services:
 
 ## Environment Variables
 
-|     Variable Name    |       Default Value      | Required |
-| -------------------- | ------------------------ | -------- |
-| CLOUDFLARE_API_TOKEN |                          |    Yes   |
-|  CLOUDFLARE_ZONE_ID  |                          |    Yes   |
-|      LOG_LEVEL       |                          |    No    |
-|  TRAEFIK_CONFIG_FILE | /etc/traefik/config.yaml |    Yes   |
+|       Variable Name       |       Default Value      | Required |
+| ------------------------- | ------------------------ | -------- |
+|   CLOUDFLARE_API_TOKEN    |                          |    Yes   |
+|     CLOUDFLARE_ZONE_ID    |                          |    Yes   |
+|         LOG_LEVEL         |                          |    No    |
+|    TRAEFIK_CONFIG_FILE    | /etc/traefik/config.yaml |    Yes   |
+| TRAEFIK_HOST_IGNORE_REGEX |            ^$            |    No    |
+
+The `TRAEFIK_HOST_IGNORE_REGEX` tells CTC which routes to ignore in the config.yaml file. This can be useful if you have a local DNS that handles routes that you do not want added to Cloudflare.
 
 At this time, the application only supports providing a Cloudflare API token. If there is large interest in there being API key support then it will be implemented.
