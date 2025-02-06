@@ -71,7 +71,7 @@ func UpdateWanIP(s state) error {
 	}
 
 	for _, record := range records {
-		if len(record.Comment) >= 22 {
+		if len(record.Comment) >= 15 {
 			substr := record.Comment[len(commentMessage):]
 			_, ok := s.Routers[substr]
 			if ok {
